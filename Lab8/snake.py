@@ -3,92 +3,78 @@ import random
 
 pygame.init()
 
+# Screen size
 width = 800
 height = 600
 
-screen = pygame.display.set_mode((width,height))
+# Game screen setup
+screen = pygame.display.set_mode((width, height))
 
-
-
-
-#variables and their initialization
+# Variables initialization
 score = 0
+level = 1
+speed = 200
 fruit_eaten = False
 
-fr_x = random.randrange(1, width//10)*10
-fr_y = random.randrange(1,height//10)*10
-fruit_coor = [fr_x,fr_y]
+# Snake starting position
+head_square = [100, 100]
+squares = [[x, 100] for x in range(30, 90, 10)]  # Initial snake body
 
-head_square = [100,100]
+# Function to generate a valid food position
+def generate_food():
+    while True:
+        fr_x = random.randrange(0, width // 10) * 10
+        fr_y = random.randrange(0, height // 10) * 10
+        fruit_coor = [fr_x, fr_y]
+        
+        # Ensure the food does not spawn on the snake
+        if fruit_coor not in squares:
+            return fruit_coor
 
-squares = [
-    [30,100],
-    [40,100],
-    [50,100],
-    [60,100],
-    [70,100],
-    [80,100],
-    [90,100],
-    [100,100]
-]
+# Generate initial fruit position
+fruit_coor = generate_food()
 
+# Directions
 direction = "right"
 next_dir = "right"
 
 done = False
-def game_over(font,size,color):
-    global done
-    g_o_font = pygame.font.SysFont(font,size)
-    g_o_surface = g_o_font.render("Game Over, your score: "+str(score),True,color)
-    g_o_rect = g_o_surface.get_rect()
 
-    screen.blit(g_o_surface,g_o_rect)
+def game_over():
+    """Ends the game and shows final score."""
+    global done
+    g_o_font = pygame.font.SysFont("times new roman", 30)
+    g_o_surface = g_o_font.render(f"Game Over, your score: {score} and level: {level}", True, (255, 0, 0))
+    g_o_rect = g_o_surface.get_rect(center=(width//2, height//2))
+
+    screen.fill((0, 0, 0))
+    screen.blit(g_o_surface, g_o_rect)
     pygame.display.update()
 
     pygame.time.delay(4000)
     pygame.quit()
+    exit()
 
-
-
-
-
-
-
-#start of gameplay loop
+# Main game loop
 while not done:
-    #gameplay even conditions
+    # Event handling
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             done = True
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_DOWN:
+            if event.key == pygame.K_DOWN and direction != "up":
                 next_dir = "down"
-            if event.key == pygame.K_UP:
+            if event.key == pygame.K_UP and direction != "down":
                 next_dir = "up"
-            if event.key == pygame.K_LEFT:
+            if event.key == pygame.K_LEFT and direction != "right":
                 next_dir = "left"
-            if event.key == pygame.K_RIGHT:
+            if event.key == pygame.K_RIGHT and direction != "left":
                 next_dir = "right"
-    for square in squares[:-1]:
-        if head_square[0] == square[0] and head_square[1] == square[1]:
-            game_over("times new roman",45,(128,128,128))
+    
+    # Update direction if valid
+    direction = next_dir
 
-    #scene logic
-
-
-
-    if next_dir == "right" and direction != "left":
-        direction = "right"
-    if next_dir == "up" and direction != "down":
-        direction = "up"
-    if next_dir == "left" and direction != "right":
-        direction = "left"
-    if next_dir == "down" and direction != "up":
-        direction = "down"
-
-
-
-
+    # Move the snake
     if direction == "right":
         head_square[0] += 10
     if direction == "left":
@@ -98,46 +84,52 @@ while not done:
     if direction == "down":
         head_square[1] += 10
 
-    new_square = [head_square[0],head_square[1]]
+    # Check for wall collision
+    if head_square[0] < 0 or head_square[0] >= width or head_square[1] < 0 or head_square[1] >= height:
+        game_over()
 
+    # Check for self-collision AFTER moving
+    for square in squares[:-1]:
+        if head_square[0] == square[0] and head_square[1] == square[1]:
+            game_over()
+
+    # Add new head position
+    new_square = head_square.copy()
     squares.append(new_square)
-    squares.pop(0)
 
-    if head_square[0] == fruit_coor[0] and head_square[1] == fruit_coor[1]:
+    # Check if food is eaten
+    if head_square == fruit_coor:
         fruit_eaten = True
-        score +=10
+        score += 10  # Increase score
+        fruit_coor = generate_food()  # Generate new food
 
+    else:
+        squares.pop(0)  # Remove tail if food is not eaten
+    
     if fruit_eaten:
-
-        fr_x = random.randrange(1, width//10)*10
-        fr_y = random.randrange(1,height//10)*10
-        fruit_coor = [fr_x,fr_y]
+        fruit_coor = generate_food()
         fruit_eaten = False
 
+        # Increase level every 30 points
+        if score % 30 == 0:
+            level += 1
+            speed = max(50, speed - 20) 
+    # Drawing section
+    screen.fill((0, 0, 0))  # Clear the screen
 
-    #drawing section
-    screen.fill((0,0,0))
+    # Draw snake
+    for square in squares:
+        pygame.draw.rect(screen, (0, 255, 0), pygame.Rect(square[0], square[1], 10, 10))
 
-    score_font = pygame.font.SysFont("times new roman",20)
-    score_surface = score_font.render("Score: "+str(score), True, (128,128,128))
-    score_rect = score_surface.get_rect()
+    # Draw food
+    pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(fruit_coor[0], fruit_coor[1], 10, 10))
 
-    screen.blit(score_surface,score_rect)
-
-
-
-    if not fruit_eaten:
-        pygame.draw.circle(screen,(0,255,0),(fruit_coor[0]+5,fruit_coor[1]+5),5)
-
-    for el in squares:
-        pygame.draw.rect(screen,(255,255,255),
-                         pygame.Rect(el[0],el[1],10,10))
-
-
-
-
+    # Display score
+    font = pygame.font.SysFont("times new roman", 20)
+    score_surface = font.render(f"Score: {score}  Level: {level}", True, (255, 255, 255))
+    screen.blit(score_surface, (10, 10))
 
     pygame.display.flip()
-    pygame.time.delay(200)
+    pygame.time.delay(speed)  # Adjust speed based on level
 
 pygame.quit()
