@@ -49,6 +49,7 @@ def printing():
     except (psycopg2.DatabaseError, Exception) as error:
         print("!!ERROR: !!", error)
 
+#deleting
 def delete(value):
     params = load_config()
     try:
@@ -61,7 +62,8 @@ def delete(value):
         print("!!ERROR: !!", error)
     finally:
         print(f"Deleted: {value}")
-    
+
+#inserting
 def insert_input():
     params = load_config()
 
@@ -76,12 +78,13 @@ def insert_input():
         conn.commit()
     except (psycopg2.DatabaseError, Exception) as error:
         print("!!ERROR: !!", error)
+    finally:
+        print(f"Inserted {username}, {phone}")
 
-execute_sql_file("phonebook_db_logic.sql")
+execute_sql_file("logic.sql")
 printing()
-
+insert_input()
 printing()
-
 
 
 
